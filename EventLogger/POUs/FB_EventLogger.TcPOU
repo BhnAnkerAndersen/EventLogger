@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_EventLogger" Id="{4c778342-f749-4588-93a2-56433cadbf1a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_EventLogger
+VAR
+	aEventBuffer : ARRAY[1..MAXIMUM_SIZE_OF_EVENT_BUFFER] OF ST_Event;
+	nEventBufferIndex : INT := 0;
+	
+	_PersistenEventStorage : I_PersistantEventStorage; // _ is a dependency
+END_VAR
+
+VAR CONSTANT
+	MAXIMUM_SIZE_OF_EVENT_BUFFER : INT := 100;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="FB_Init" Id="{463be883-2b51-4873-b5a5-d4d489f92ffa}">
+      <Declaration><![CDATA[//FB_Init is always available implicitly and it is used primarily for initialization.
+//The return value is not evaluated. For a specific influence, you can also declare the
+//methods explicitly and provide additional code there with the standard initialization
+//code. You can evaluate the return value.
+METHOD FB_Init: BOOL
+VAR_INPUT
+    bInitRetains: BOOL; // TRUE: the retain variables are initialized (reset warm / reset cold)
+    bInCopyCode: BOOL;  // TRUE: the instance will be copied to the copy code afterward (online change)   
+	iPersistentEventStorage : I_PersistantEventStorage;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_PersistenEventStorage := iPersistentEventStorage;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_AddEvent" Id="{2e084cc3-6e3a-42b0-9392-00b12f4ece86}">
+      <Declaration><![CDATA[(*Returns TRUE if add was successful and FALSE if buffer is full*)
+METHOD PUBLIC M_AddEvent : BOOL
+VAR_INPUT
+	eEventType : E_EventType;
+	eEventSeverity : TcEventSeverity;
+	nEventIdentity : UDINT;
+	sEventText : STRING(255);
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT M_IsEventBufferFull() THEN
+	nEventBufferIndex := nEventBufferIndex + 1; 
+	aEventBuffer[nEventBufferIndex].eEventType := eEventType;
+	aEventBuffer[nEventBufferIndex].eEventSeverity := eEventSeverity;
+	aEventBuffer[nEventBufferIndex].nEventIdentity := nEventIdentity;
+	aEventBuffer[nEventBufferIndex].sEventText := sEventText;
+	F_UpdateEventTimestampWithSystemTime(stEvent :=  aEventBuffer[nEventBufferIndex]);
+	
+	M_AddEvent := TRUE;
+ELSE
+	M_AddEvent := FALSE;
+END_IF
+
+// Here we want to store the event persistently
+_PersistenEventStorage.M_StoreEvent(stEvent := aEventBuffer[nEventBufferIndex]);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_IsEventBufferFull" Id="{37705276-913a-43cb-9b5d-f07cd2b12509}">
+      <Declaration><![CDATA[METHOD PRIVATE M_IsEventBufferFull : BOOL
+
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (nEventBufferIndex + 1) > MAXIMUM_SIZE_OF_EVENT_BUFFER THEN
+	M_IsEventBufferFull := TRUE; 
+ELSE
+	M_IsEventBufferFull := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

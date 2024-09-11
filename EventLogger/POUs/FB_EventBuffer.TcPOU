@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_EventBuffer" Id="{afc40b95-8507-4384-9b51-78c9d5475dc9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_EventBuffer
+VAR
+	fbMemRingBuffer : FB_MemRingBuffer;
+	aEventBuffer : ARRAY[0..MAX_NUMBER_OF_BYTES_FOR_ALL_ST_EVENTS] OF BYTE;
+	
+END_VAR
+VAR CONSTANT
+	SIZE_OF_ST_EVENT : UDINT := SIZEOF(ST_Event);
+	MAX_NUMBER_OF_ST_EVENTS : UDINT := 5;
+	MAX_NUMBER_OF_BYTES_FOR_ALL_ST_EVENTS : UDINT := SIZE_OF_ST_EVENT * MAX_NUMBER_OF_ST_EVENTS;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="M_AddEvent" Id="{50f1c602-fa84-46b5-a594-85d0bfb20aca}">
+      <Declaration><![CDATA[METHOD PUBLIC M_AddEvent : BOOL
+VAR_INPUT
+	stEvent : REFERENCE TO ST_Event;
+END_VAR
+VAR_OUTPUT
+	bError : BOOL; 
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbMemRingBuffer.A_AddTail(
+	pWrite := ADR(stEvent), 
+	cbWrite := SIZEOF(stEvent), 
+	pBuffer := ADR(aEventBuffer),
+	cbBuffer := SIZEOF(aEventBuffer));
+	
+bError := NOT fbMemRingBuffer.bOk;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="M_GetAndRemoveEvent" Id="{672e60e4-01b2-4ed6-8097-0efe34a3d611}">
+      <Declaration><![CDATA[METHOD PUBLIC M_GetAndRemoveEvent : BOOL
+VAR_OUTPUT
+	stEvent : ST_Event;
+	bError : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[fbMemRingBuffer.A_RemoveHead(
+	pRead := ADR(stEvent), 
+	cbRead := SIZEOF(stEvent), 
+	pBuffer := ADR(aEventBuffer),
+	cbBuffer := SIZEOF(aEventBuffer));
+	
+bError := NOT fbMemRingBuffer.bOk;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>
