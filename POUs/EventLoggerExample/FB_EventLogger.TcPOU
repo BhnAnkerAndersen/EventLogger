@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_EventLogger" Id="{c3e5ec1d-5cfb-4980-a176-b11a253ef344}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_EventLogger
+VAR
+	bBoolean : BOOL := FALSE;
+	
+	// Event example
+	eEventType1 : E_EventType := E_EventType.Alarm;
+	eEventSeverity1 : TcEventSeverity.Error;
+	nEventIdentity1 : UDINT := 1;
+	sEventText1 : STRING(255) := "This is an example";
+	
+	fbCsvPersistantEventStorage : FB_CsvPersistantEventStorage;
+	fbEventLogger : FB_EventLogger(fbCsvPersistantEventStorage);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//Example of event
+IF bBoolean THEN
+	EventLogger.AddEvent(eEventType1, eEventSeverity1, nEventIdentity1, sEventText1);
+END_IF
+
+fbCsvPersistantEventStorage();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
